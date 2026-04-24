@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Tic-tac-toe</title>
+        <style>
+            body { 
+                font-family: sans-serif; 
+                display: flex; 
+                flex-direction: column;
+                align-items: center; 
+                padding: 2rem; 
+            }
+
+            #board { 
+                display: grid; 
+                grid-template-columns: repeat(3, 100px);
+                gap: 4px; 
+                margin: 1rem 0; 
+            }
+
+            .cell { 
+                width: 100px; 
+                height: 100px; 
+                font-size: 3rem; 
+                cursor: pointer;
+                border: 2px solid #ccc; 
+                display: flex; 
+                align-items: center;
+                justify-content: center; 
+            }
+
+            .cell:hover:not(.taken) { 
+                background: #f0f0f0; 
+            }
+
+            .cell.taken { 
+                cursor: default; 
+            }
+
+            #status { 
+                font-size: 1.2rem; 
+                margin: 1rem 0; 
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Tic-tac-toe</h1>
+        <div id="status">Connecting...</div>
+        <div id="board">
+            <!-- 9 cells rendered by JS -->
+        </div>
+
+        <script>
+            const playerId = crypto.randomUUID();
+            const ws = new WebSocket(`ws://localhost:8000/ws/${playerId}`);
+            
+            let mySymbol = null;
+            let myTurn = false;
+            let gameId = null;
+
+            // Render the board from a flat 9-element array
+            function renderBoard(board) {
+                const boardEl = document.getElementById("board");
+                boardEl.innerHTML = "";
+                board.forEach((cell, i) => {
+                    const div = document.createElement("div");
+                    div.className = "cell" + (cell ? " taken" : "");
+                    div.textContent = cell;
+                    div.onclick = () => sendMove(i);
+                    boardEl.appendChild(div);
+                });
+            }
+
+            function sendMove(cell) {
+                if (!myTurn || !gameId) return;
+                ws.send(JSON.stringify({ type: "move", cell }));
+                myTurn = false;  // optimistic — server will confirm
+            }
+
+            ws.onmessage = ({ data }) => {
+                const msg = JSON.parse(data);
+
+                if (msg.type === "waiting") {
+                    document.getElementById("status").textContent = msg.message;
+                }
+
+                else if (msg.type === "game_start") {
+                    gameId = msg.game_id;
+                    mySymbol = msg.symbol;
+                    myTurn = msg.your_turn;
+                    renderBoard(Array(9).fill(""));
+                    document.getElementById("status").textContent =
+                    `You are ${mySymbol}. ${myTurn ? "Your turn!" : "Opponent's turn."}`;
+                }
+
+                else if (msg.type === "game_update") {
+                    myTurn = msg.current_turn === (mySymbol === "X" ? 0 : 1);
+                    renderBoard(msg.board);
+                    document.getElementById("status").textContent =
+                    myTurn ? "Your turn!" : "Opponent's turn...";
+                }
+
+                else if (msg.type === "game_over") {
+                    if (msg.board) renderBoard(msg.board);
+                    const result = msg.winner === mySymbol ? "You won!"
+                                : msg.winner ? "You lost."
+                                : msg.message || "Draw!";
+                    document.getElementById("status").textContent = result;
+                }
+
+                else if (msg.type === "error") {
+                    console.warn("Server error:", msg.message);
+                }
+            };
+
+            ws.onclose = () => {
+                document.getElementById("status").textContent = "Disconnected.";
+            };
+        </script>
+    </body>
+</html>
