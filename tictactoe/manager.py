@@ -16,7 +16,7 @@ class GameManager:
     async def connect(self, player_id: str, ws: WebSocket) -> tuple[str, int] | None:
         await ws.accept()
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         matched: asyncio.Future = loop.create_future()
 
         # Put this player in the queue
