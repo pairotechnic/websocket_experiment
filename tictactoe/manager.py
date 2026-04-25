@@ -28,7 +28,7 @@ class GameManager:
 
     async def _start_game(self, pid1: str, ws1: WebSocket, pid2: str, ws2: WebSocket):
         game_id = str(uuid.uuid4())[:8]
-        game = Game(game_id=game_id, players=[ws1, ws2])
+        game = Game(game_id=game_id, players=[ws1, ws2], player_ids=[pid1, pid2])
         self.games[game_id] = game
 
         # Notify both players

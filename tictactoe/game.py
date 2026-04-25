@@ -11,6 +11,7 @@ from fastapi import WebSocket
 class Game:
     game_id: str
     players: list[WebSocket] = field(default_factory=list)   # [X_socket, O_socket]
+    player_ids: list[str] = field(default_factory=list)
     board: list[str] = field(default_factory=lambda: [""] * 9)
     current_turn: int = 0  # index into players list
     winner: Optional[str] = None
