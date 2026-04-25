@@ -17,7 +17,7 @@ class GameManager:
         await ws.accept()
 
         loop = asyncio.get_event_loop()
-        matched: asyncio.Fututre = loop.create_future()
+        matched: asyncio.Future = loop.create_future()
 
         # Put this player in the queue
         await self.waiting.put((player_id, ws, matched))
