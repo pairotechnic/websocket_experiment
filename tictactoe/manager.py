@@ -12,6 +12,12 @@ class GameManager:
     def __init__(self):
         self.waiting: asyncio.Queue[tuple[str, WebSocket, asyncio.Future[tuple[str, int]]]] = asyncio.Queue()
         self.games: dict[str, Game] = {}
+        self.reader_tasks: dict[str, list[asyncio.Task]] = {}  # game_id -> [task_X, task_O]
+
+    def register_task(self, game_id: str, player_index: int, task: asyncio.Task):
+        if game_id not in self.reader_tasks:
+            self.reader_tasks[game_id] = [None, None]
+        self.reader_tasks[game_id][player_index] = task
 
     async def connect(self, player_id: str, ws: WebSocket) -> tuple[str, int] | None:
         await ws.accept()
@@ -95,15 +101,22 @@ class GameManager:
         game = self.games.get(game_id)
         if not game:
             return
-        # Notify the other player
+
         other = 1 - player_index
-        if other < len(game.players):
-            try:
-                await game.players[other].send_json({
-                    "type": "game_over",
-                    "winner": None,
-                    "message": "Opponent disconnected",
-                })
-            except Exception:
-                pass
+        # Notify the other player
+        try:
+            await game.players[other].send_json({
+                "type": "game_over",
+                "winner": None,
+                "message": "Opponent disconnected.",
+            })
+        except Exception:
+            pass
+
+        # Cancel the other player's reader task — unblocks them immediately
+        tasks = self.reader_tasks.pop(game_id, [None, None])
+        other_task = tasks[other]
+        if other_task and not other_task.done():
+            other_task.cancel()
+
         del self.games[game_id]

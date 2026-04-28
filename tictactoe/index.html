@@ -79,6 +79,8 @@
                 myTurn = false;  // optimistic — server will confirm
             }
 
+            let opponentDisconnected = false;
+
             ws.onmessage = ({ data }) => {
                 const msg = JSON.parse(data);
 
@@ -104,6 +106,11 @@
 
                 else if (msg.type === "game_over") {
                     if (msg.board) renderBoard(msg.board);
+
+                    if (msg.message === "Opponent disconnected.") {
+                        opponentDisconnected = true;  // set flag BEFORE onclose fires
+                    }
+
                     const result = msg.winner === mySymbol ? "You won!"
                                 : msg.winner ? "You lost."
                                 : msg.message || "Draw!";
@@ -115,9 +122,14 @@
                 }
             };
 
+            
+            // This should overwrite the message as long as it's not "Opponent disconnected"
             ws.onclose = () => {
-                document.getElementById("status").textContent = "Disconnected.";
+                if (!opponentDisconnected) {
+                    document.getElementById("status").textContent = "Disconnected.";
+                }
             };
+            
         </script>
     </body>
 </html>

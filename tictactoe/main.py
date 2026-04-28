@@ -1,4 +1,5 @@
 # Standard Library Imports
+import asyncio
 
 # Third-Party Library Imports
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -11,6 +12,13 @@ from manager import GameManager
 app = FastAPI()
 manager = GameManager()
 
+# HELPERS
+async def _read_loop(ws: WebSocket, game_id: str, player_index: int):
+    async for data in ws.iter_json():
+        if data.get("type") == "move":
+            await manager.handle_move(game_id, player_index, data["cell"])
+
+# ENDPOINTS
 @app.get("/")
 async def get():
     with open("index.html") as f:
@@ -18,20 +26,20 @@ async def get():
 
 @app.websocket("/ws/{player_id}")
 async def websocket_endpoint(ws: WebSocket, player_id: str):
-    game_id = None
-    player_index = None
+    result = await manager.connect(player_id, ws)
+    if not result:
+        return
+    game_id, player_index = result
+
+    reader_task = asyncio.create_task(
+        _read_loop(ws, game_id, player_index)
+    )
+    manager.register_task(game_id, player_index, reader_task)  # register after creation
 
     try:
-        result = await manager.connect(player_id, ws)
-        if result : 
-            game_id, player_index = result
+        await reader_task
+    except asyncio.CancelledError:
+        pass
+    finally:
+        await manager.disconnect(game_id, player_index)
 
-        # Main message loop
-        async for data in ws.iter_json():
-            if data.get("type") == "move":
-                if game_id and player_index is not None:
-                    await manager.handle_move(game_id, player_index, data["cell"])
-
-    except WebSocketDisconnect:
-        if game_id and player_index is not None:
-            await manager.disconnect(game_id, player_index)
