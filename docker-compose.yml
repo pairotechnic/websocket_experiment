@@ -1,0 +1,9 @@
+services:
+  tictactoe:
+    build: .
+    container_name: tictactoe
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONBUFFERED=1
+    restart: unless-stopped
