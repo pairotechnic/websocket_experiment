@@ -54,7 +54,8 @@
 
         <script>
             const playerId = crypto.randomUUID();
-            const ws = new WebSocket(`ws://localhost:8000/ws/${playerId}`);
+            const host = window.location.host;
+            const ws = new WebSocket(`ws://${host}/ws/${playerId}`);
             
             let mySymbol = null;
             let myTurn = false;
