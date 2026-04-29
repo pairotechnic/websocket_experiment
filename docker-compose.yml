@@ -1,6 +1,6 @@
 services:
   tictactoe:
-    build: .
+    image: ghcr.io/${GITHUB_REPOSITORY}:sha-${IMAGE_TAG}
     container_name: tictactoe
     ports:
       - "8000:8000"
