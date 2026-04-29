@@ -53,7 +53,18 @@
         </div>
 
         <script>
-            const playerId = crypto.randomUUID();
+            // crypto.randomUUID() only works with localhost or https, it's disabled on http
+            // const playerId = crypto.randomUUID();
+            
+            // so we calculate a UUID ourselves
+            function generateUUID() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                    const r = Math.random() * 16 | 0;
+                    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+                });
+            }
+            const playerId = generateUUID();
+
             const host = window.location.host;
             const ws = new WebSocket(`ws://${host}/ws/${playerId}`);
             
