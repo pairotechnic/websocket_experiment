@@ -80,10 +80,10 @@ jobs:
             ${{ secrets.GCP_VM_USER }}@${{ secrets.GCP_VM_HOST }} \
             "cd ~/tictactoe && \
             echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
-            IMAGE_TAG=sha-$(echo '${{ github.sha }}' | cut -c1-7) \
+            IMAGE_TAG=$(echo '${{ github.sha }}' | cut -c1-7) \
             GITHUB_REPOSITORY=${{ github.repository }} \
             docker compose pull tictactoe && \
-            IMAGE_TAG=sha-$(echo '${{ github.sha }}' | cut -c1-7) \
+            IMAGE_TAG=$(echo '${{ github.sha }}' | cut -c1-7) \
             GITHUB_REPOSITORY=${{ github.repository }} \
             docker compose up -d --no-build && \
             docker image prune -f"
