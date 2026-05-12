@@ -66,7 +66,10 @@
             const playerId = generateUUID();
 
             const host = window.location.host;
-            const ws = new WebSocket(`ws://${host}/ws/${playerId}`);
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            
+            // Use wss:// with HTTPS and ws:// otherwise, instead of ws:// everytime, because browsers will refuse to open a ws:// connection from an https:// page (mixed content block)
+            const ws = new WebSocket(`${protocol}//${host}/ws/${playerId}`)
             
             let mySymbol = null;
             let myTurn = false;
