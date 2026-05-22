@@ -19,12 +19,12 @@ async def _read_loop(ws: WebSocket, game_id: str, player_index: int):
             await manager.handle_move(game_id, player_index, data["cell"])
 
 # ENDPOINTS
-@app.get("/")
+@app.get("/tictactoe")
 async def get():
     with open("index.html") as f:
         return HTMLResponse(f.read())
 
-@app.websocket("/ws/{player_id}")
+@app.websocket("/tictactoe/ws/{player_id}")
 async def websocket_endpoint(ws: WebSocket, player_id: str):
     result = await manager.connect(player_id, ws)
     if not result:

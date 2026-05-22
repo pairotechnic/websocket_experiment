@@ -69,7 +69,7 @@
             const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             
             // Use wss:// with HTTPS and ws:// otherwise, instead of ws:// everytime, because browsers will refuse to open a ws:// connection from an https:// page (mixed content block)
-            const ws = new WebSocket(`${protocol}//${host}/ws/${playerId}`)
+            const ws = new WebSocket(`${protocol}//${host}/tictactoe/ws/${playerId}`)
             
             let mySymbol = null;
             let myTurn = false;
