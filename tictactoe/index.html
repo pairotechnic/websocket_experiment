@@ -1,150 +1,167 @@
 <!DOCTYPE html>
-
 <html>
     <head>
         <title>Tic-tac-toe</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
         <style>
-            body { 
-                font-family: sans-serif; 
-                display: flex; 
-                flex-direction: column;
-                align-items: center; 
-                padding: 2rem; 
+            * { 
+                box-sizing: border-box; 
+                margin: 0; 
+                padding: 0; 
             }
 
-            #board { 
-                display: grid; 
-                grid-template-columns: repeat(3, 100px);
-                gap: 4px; 
-                margin: 1rem 0; 
-            }
-
-            .cell { 
-                width: 100px; 
-                height: 100px; 
-                font-size: 3rem; 
-                cursor: pointer;
-                border: 2px solid #ccc; 
-                display: flex; 
+            body {
+                font-family: sans-serif;
+                display: flex;
+                justify-content: center;
                 align-items: center;
-                justify-content: center; 
+                min-height: 100vh;
+                padding: 2rem;
+                background: #fafafa;
             }
 
-            .cell:hover:not(.taken) { 
-                background: #f0f0f0; 
+            .container { 
+                width: 100%; 
+                max-width: 420px; 
             }
 
-            .cell.taken { 
-                cursor: default; 
+            .header { 
+                text-align: center; 
+                margin-bottom: 2rem; 
             }
 
-            #status { 
-                font-size: 1.2rem; 
-                margin: 1rem 0; 
+            .header .marks { 
+                font-size: 2.5rem; 
+                margin-bottom: 0.5rem; 
             }
+
+            .header h1 { 
+                font-size: 1.5rem; 
+                font-weight: 600; 
+                margin-bottom: 0.25rem; 
+            }
+
+            .header p { 
+                font-size: 0.9rem; 
+                color: #666; 
+            }
+
+            .mode-card {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem 1.25rem;
+                border: 1px solid #e5e5e5;
+                border-radius: 12px;
+                background: #fff;
+                margin-bottom: 0.75rem;
+                cursor: pointer;
+                text-decoration: none;
+                color: inherit;
+                transition: border-color 0.15s, box-shadow 0.15s;
+            }
+
+            .mode-card:hover:not(.disabled) {
+                border-color: #aaa;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            }
+
+            .mode-card.disabled { 
+                opacity: 0.5; 
+                cursor: not-allowed; 
+                pointer-events: none; 
+            }
+
+            .icon-wrap {
+                width: 46px; height: 46px;
+                border-radius: 10px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 1.3rem;
+                flex-shrink: 0;
+            }
+
+            .icon-wrap.teal  { 
+                background: #e1f5ee; 
+                color: #0f6e56; 
+            }
+
+            .icon-wrap.purple { 
+                background: #eeedfe; 
+                color: #534ab7; 
+            }
+
+            .icon-wrap.coral  { 
+                background: #faece7; 
+                color: #993c1d; 
+            }
+
+            .mode-info { 
+                flex: 1; 
+            }
+
+            .mode-title {
+                font-size: 0.95rem;
+                font-weight: 600;
+                margin-bottom: 2px;
+                display: flex; align-items: center; gap: 0.4rem;
+            }
+
+            .mode-desc { 
+                font-size: 0.82rem; 
+                color: #666; 
+            }
+
+            .badge {
+                font-size: 0.7rem;
+                padding: 2px 7px;
+                border-radius: 6px;
+                font-weight: 500;
+                background: #fff3cd;
+                color: #856404;
+            }
+
+            .chevron { 
+                color: #ccc; 
+                font-size: 1.1rem; 
+            }
+            
         </style>
     </head>
 
     <body>
-        <h1>Tic-tac-toe</h1>
-        <div id="status">Connecting...</div>
-        <div id="board">
-            <!-- 9 cells rendered by JS -->
+        <div class="container">
+            <div class="header">
+                <div class="marks">✕ ○</div>
+                <h1>Tic-tac-toe</h1>
+                <p>Choose how you want to play</p>
+            </div>
+
+            <div class="mode-card disabled">
+                <div class="icon-wrap teal"><i class="ti ti-cpu"></i></div>
+                <div class="mode-info">
+                    <div class="mode-title">Play against AI <span class="badge">Coming soon</span></div>
+                    <div class="mode-desc">Challenge a trained AI — no opponent needed</div>
+                </div>
+                <i class="ti ti-chevron-right chevron"></i>
+            </div>
+
+            <div class="mode-card disabled">
+                <div class="icon-wrap purple"><i class="ti ti-users"></i></div>
+                <div class="mode-info">
+                    <div class="mode-title">Play against a friend <span class="badge">Coming soon</span></div>
+                    <div class="mode-desc">Share a link and play with someone you know</div>
+                </div>
+                <i class="ti ti-chevron-right chevron"></i>
+            </div>
+
+            <a class="mode-card" href="/tictactoe/random">
+                <div class="icon-wrap coral"><i class="ti ti-world"></i></div>
+                <div class="mode-info">
+                    <div class="mode-title">Play against a random opponent</div>
+                    <div class="mode-desc">Get matched with whoever is online right now</div>
+                </div>
+                <i class="ti ti-chevron-right chevron"></i>
+            </a>
         </div>
-
-        <script>
-            // crypto.randomUUID() only works with localhost or https, it's disabled on http
-            // const playerId = crypto.randomUUID();
-            
-            // so we calculate a UUID ourselves
-            function generateUUID() {
-                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-                    const r = Math.random() * 16 | 0;
-                    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-                });
-            }
-            const playerId = generateUUID();
-
-            const host = window.location.host;
-            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-            
-            // Use wss:// with HTTPS and ws:// otherwise, instead of ws:// everytime, because browsers will refuse to open a ws:// connection from an https:// page (mixed content block)
-            const ws = new WebSocket(`${protocol}//${host}/tictactoe/ws/${playerId}`)
-            
-            let mySymbol = null;
-            let myTurn = false;
-            let gameId = null;
-
-            // Render the board from a flat 9-element array
-            function renderBoard(board) {
-                const boardEl = document.getElementById("board");
-                boardEl.innerHTML = "";
-                board.forEach((cell, i) => {
-                    const div = document.createElement("div");
-                    div.className = "cell" + (cell ? " taken" : "");
-                    div.textContent = cell;
-                    div.onclick = () => sendMove(i);
-                    boardEl.appendChild(div);
-                });
-            }
-
-            function sendMove(cell) {
-                if (!myTurn || !gameId) return;
-                ws.send(JSON.stringify({ type: "move", cell }));
-                myTurn = false;  // optimistic — server will confirm
-            }
-
-            let opponentDisconnected = false;
-
-            ws.onmessage = ({ data }) => {
-                const msg = JSON.parse(data);
-
-                if (msg.type === "waiting") {
-                    document.getElementById("status").textContent = msg.message;
-                }
-
-                else if (msg.type === "game_start") {
-                    gameId = msg.game_id;
-                    mySymbol = msg.symbol;
-                    myTurn = msg.your_turn;
-                    renderBoard(Array(9).fill(""));
-                    document.getElementById("status").textContent =
-                    `You are ${mySymbol}. ${myTurn ? "Your turn!" : "Opponent's turn."}`;
-                }
-
-                else if (msg.type === "game_update") {
-                    myTurn = msg.current_turn === (mySymbol === "X" ? 0 : 1);
-                    renderBoard(msg.board);
-                    document.getElementById("status").textContent =
-                    myTurn ? "Your turn!" : "Opponent's turn...";
-                }
-
-                else if (msg.type === "game_over") {
-                    if (msg.board) renderBoard(msg.board);
-
-                    if (msg.message === "Opponent disconnected.") {
-                        opponentDisconnected = true;  // set flag BEFORE onclose fires
-                    }
-
-                    const result = msg.winner === mySymbol ? "You won!"
-                                : msg.winner ? "You lost."
-                                : msg.message || "Draw!";
-                    document.getElementById("status").textContent = result;
-                }
-
-                else if (msg.type === "error") {
-                    console.warn("Server error:", msg.message);
-                }
-            };
-
-            
-            // This should overwrite the message as long as it's not "Opponent disconnected"
-            ws.onclose = () => {
-                if (!opponentDisconnected) {
-                    document.getElementById("status").textContent = "Disconnected.";
-                }
-            };
-            
-        </script>
     </body>
 </html>

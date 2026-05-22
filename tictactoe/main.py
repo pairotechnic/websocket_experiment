@@ -43,3 +43,7 @@ async def websocket_endpoint(ws: WebSocket, player_id: str):
     finally:
         await manager.disconnect(game_id, player_index)
 
+@app.get("/tictactoe/random")
+async def get_game():
+    with open("game.html") as f:
+        return HTMLResponse(f.read())

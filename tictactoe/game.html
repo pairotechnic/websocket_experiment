@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Tic-tac-toe</title>
+        <style>
+            body { 
+                font-family: sans-serif; 
+                display: flex; 
+                flex-direction: column;
+                align-items: center; 
+                padding: 2rem; 
+            }
+
+            #board { 
+                display: grid; 
+                grid-template-columns: repeat(3, 100px);
+                gap: 4px; 
+                margin: 1rem 0; 
+            }
+
+            .cell { 
+                width: 100px; 
+                height: 100px; 
+                font-size: 3rem; 
+                cursor: pointer;
+                border: 2px solid #ccc; 
+                display: flex; 
+                align-items: center;
+                justify-content: center; 
+            }
+
+            .cell:hover:not(.taken) { 
+                background: #f0f0f0; 
+            }
+
+            .cell.taken { 
+                cursor: default; 
+            }
+
+            #status { 
+                font-size: 1.2rem; 
+                margin: 1rem 0; 
+            }
+        </style>
+    </head>
+
+    <body>
+        <a href="/tictactoe" style="display:inline-block; margin-bottom:1rem; font-size:0.9rem; color:#555; text-decoration:none;">← Back</a>
+        <h1>Tic-tac-toe</h1>
+        <div id="status">Connecting...</div>
+        <div id="board">
+            <!-- 9 cells rendered by JS -->
+        </div>
+
+        <script>
+            // crypto.randomUUID() only works with localhost or https, it's disabled on http
+            // const playerId = crypto.randomUUID();
+            
+            // so we calculate a UUID ourselves
+            function generateUUID() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                    const r = Math.random() * 16 | 0;
+                    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+                });
+            }
+            const playerId = generateUUID();
+
+            const host = window.location.host;
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            
+            // Use wss:// with HTTPS and ws:// otherwise, instead of ws:// everytime, because browsers will refuse to open a ws:// connection from an https:// page (mixed content block)
+            const ws = new WebSocket(`${protocol}//${host}/tictactoe/ws/${playerId}`)
+            
+            let mySymbol = null;
+            let myTurn = false;
+            let gameId = null;
+
+            // Render the board from a flat 9-element array
+            function renderBoard(board) {
+                const boardEl = document.getElementById("board");
+                boardEl.innerHTML = "";
+                board.forEach((cell, i) => {
+                    const div = document.createElement("div");
+                    div.className = "cell" + (cell ? " taken" : "");
+                    div.textContent = cell;
+                    div.onclick = () => sendMove(i);
+                    boardEl.appendChild(div);
+                });
+            }
+
+            function sendMove(cell) {
+                if (!myTurn || !gameId) return;
+                ws.send(JSON.stringify({ type: "move", cell }));
+                myTurn = false;  // optimistic — server will confirm
+            }
+
+            let opponentDisconnected = false;
+
+            ws.onmessage = ({ data }) => {
+                const msg = JSON.parse(data);
+
+                if (msg.type === "waiting") {
+                    document.getElementById("status").textContent = msg.message;
+                }
+
+                else if (msg.type === "game_start") {
+                    gameId = msg.game_id;
+                    mySymbol = msg.symbol;
+                    myTurn = msg.your_turn;
+                    renderBoard(Array(9).fill(""));
+                    document.getElementById("status").textContent =
+                    `You are ${mySymbol}. ${myTurn ? "Your turn!" : "Opponent's turn."}`;
+                }
+
+                else if (msg.type === "game_update") {
+                    myTurn = msg.current_turn === (mySymbol === "X" ? 0 : 1);
+                    renderBoard(msg.board);
+                    document.getElementById("status").textContent =
+                    myTurn ? "Your turn!" : "Opponent's turn...";
+                }
+
+                else if (msg.type === "game_over") {
+                    if (msg.board) renderBoard(msg.board);
+
+                    if (msg.message === "Opponent disconnected.") {
+                        opponentDisconnected = true;  // set flag BEFORE onclose fires
+                    }
+
+                    const result = msg.winner === mySymbol ? "You won!"
+                                : msg.winner ? "You lost."
+                                : msg.message || "Draw!";
+                    document.getElementById("status").textContent = result;
+                }
+
+                else if (msg.type === "error") {
+                    console.warn("Server error:", msg.message);
+                }
+            };
+
+            
+            // This should overwrite the message as long as it's not "Opponent disconnected"
+            ws.onclose = () => {
+                if (!opponentDisconnected) {
+                    document.getElementById("status").textContent = "Disconnected.";
+                }
+            };
+            
+        </script>
+    </body>
+</html>

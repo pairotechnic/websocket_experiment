@@ -21,22 +21,38 @@ class GameManager:
 
     async def connect(self, player_id: str, ws: WebSocket) -> tuple[str, int] | None:
         await ws.accept()
-
         loop = asyncio.get_running_loop()
         matched: asyncio.Future = loop.create_future()
 
-        # Put this player in the queue
         await self.waiting.put((player_id, ws, matched))
         await ws.send_json({"type": "waiting", "message": "Looking for opponent..."})
 
-        # If there are now 2 waiting players, start a game
+        # Drain any stale (disconnected) waiters before trying to pair
+        if self.waiting.qsize() >= 2:
+            live = []
+            while not self.waiting.empty():
+                entry = self.waiting.get_nowait()
+                pid, candidate_ws, fut = entry
+                try:
+                    await candidate_ws.send_json({"type": "waiting", "message": "Looking for opponent..."})
+                    live.append(entry)
+                except Exception:
+                    # Socket is dead — discard it; its future is abandoned
+                    if not fut.done():
+                        fut.cancel()
+
+            for entry in live:
+                await self.waiting.put(entry)
+
         if self.waiting.qsize() >= 2:
             pid1, ws1, fut1 = await self.waiting.get()
             pid2, ws2, fut2 = await self.waiting.get()
             await self._start_game(pid1, ws1, fut1, pid2, ws2, fut2)
-        
-        # Both players await their own fututre - resolves when _start_game sets the result
-        return await matched
+
+        try:
+            return await matched
+        except asyncio.CancelledError:
+            return None
 
     # Returns which index *this* socket is
     async def _start_game(
