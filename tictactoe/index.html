@@ -29,23 +29,21 @@
                 text-align: center; 
                 margin-bottom: 2rem; 
             }
-
             .header .marks { 
                 font-size: 2.5rem; 
                 margin-bottom: 0.5rem; 
             }
-
             .header h1 { 
                 font-size: 1.5rem; 
                 font-weight: 600; 
                 margin-bottom: 0.25rem; 
             }
-
             .header p { 
                 font-size: 0.9rem; 
                 color: #666; 
             }
 
+            /* ── Mode cards ── */
             .mode-card {
                 display: flex;
                 align-items: center;
@@ -60,16 +58,14 @@
                 color: inherit;
                 transition: border-color 0.15s, box-shadow 0.15s;
             }
-
             .mode-card:hover:not(.disabled) {
                 border-color: #aaa;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             }
-
-            .mode-card.disabled { 
-                opacity: 0.5; 
-                cursor: not-allowed; 
-                pointer-events: none; 
+            .mode-card.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                pointer-events: none;
             }
 
             .icon-wrap {
@@ -79,15 +75,18 @@
                 font-size: 1.3rem;
                 flex-shrink: 0;
             }
-
-            .icon-wrap.teal  { 
+            .icon-wrap.teal   { 
                 background: #e1f5ee; 
                 color: #0f6e56; 
             }
-
             .icon-wrap.purple { 
                 background: #eeedfe; 
                 color: #534ab7; 
+            }
+
+            .icon-wrap.blue   { 
+                background: #e3f0fd; 
+                color: #1a5fa8; 
             }
 
             .icon-wrap.coral  { 
@@ -95,28 +94,31 @@
                 color: #993c1d; 
             }
 
+            .icon-wrap.gray   { 
+                background: #f0f0f0; 
+                color: #555; 
+            }
+
             .mode-info { 
                 flex: 1; 
             }
-
             .mode-title {
-                font-size: 0.95rem;
+                font-size: 0.95rem; 
                 font-weight: 600;
                 margin-bottom: 2px;
                 display: flex; align-items: center; gap: 0.4rem;
             }
-
             .mode-desc { 
                 font-size: 0.82rem; 
                 color: #666; 
             }
 
             .badge {
-                font-size: 0.7rem;
+                font-size: 0.7rem; 
                 padding: 2px 7px;
-                border-radius: 6px;
+                border-radius: 6px; 
                 font-weight: 500;
-                background: #fff3cd;
+                background: #fff3cd; 
                 color: #856404;
             }
 
@@ -124,11 +126,82 @@
                 color: #ccc; 
                 font-size: 1.1rem; 
             }
-            
+
+            /* ── Symbol picker overlay ── */
+            .overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.35);
+                justify-content: center;
+                align-items: center;
+                z-index: 10;
+            }
+
+            .overlay.visible { 
+                display: flex; 
+            }
+
+            .picker {
+                background: #fff;
+                border-radius: 16px;
+                padding: 2rem;
+                width: 320px;
+                text-align: center;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            }
+
+            .picker h2 { 
+                font-size: 1.1rem; 
+                font-weight: 600; 
+                margin-bottom: 0.4rem; 
+            }
+
+            .picker p  { 
+                font-size: 0.85rem; 
+                color: #666; 
+                margin-bottom: 1.5rem; 
+            }
+
+            .symbol-btns {
+                display: flex;
+                gap: 1rem;
+                justify-content: center;
+                margin-bottom: 1rem;
+            }
+
+            .symbol-btn {
+                flex: 1;
+                padding: 1rem;
+                font-size: 1.8rem;
+                border: 2px solid #e5e5e5;
+                border-radius: 12px;
+                background: #fff;
+                cursor: pointer;
+                transition: border-color 0.15s, background 0.15s;
+            }
+
+            .symbol-btn:hover { 
+                border-color: #aaa; 
+                background: #f9f9f9; 
+            }
+
+            .btn-cancel {
+                background: none;
+                border: none;
+                color: #999;
+                font-size: 0.85rem;
+                cursor: pointer;
+                padding: 0.25rem;
+            }
+            .btn-cancel:hover { 
+                color: #555; 
+            }
+
         </style>
     </head>
-
     <body>
+
         <div class="container">
             <div class="header">
                 <div class="marks">✕ ○</div>
@@ -136,24 +209,39 @@
                 <p>Choose how you want to play</p>
             </div>
 
-            <div class="mode-card disabled">
-                <div class="icon-wrap teal"><i class="ti ti-cpu"></i></div>
+            <!-- AI modes — each triggers the symbol picker -->
+            <div class="mode-card" onclick="openPicker('minimax')">
+                <div class="icon-wrap teal">
+                    <i class="ti ti-robot"></i>
+                </div>
                 <div class="mode-info">
-                    <div class="mode-title">Play against AI <span class="badge">Coming soon</span></div>
-                    <div class="mode-desc">Challenge a trained AI — no opponent needed</div>
+                    <div class="mode-title">Play against Minimax</div>
+                    <div class="mode-desc">Perfect AI — it never loses</div>
                 </div>
                 <i class="ti ti-chevron-right chevron"></i>
             </div>
 
-            <div class="mode-card disabled">
-                <div class="icon-wrap purple"><i class="ti ti-users"></i></div>
+            <div class="mode-card disabled" onclick="openPicker('ai-self')">
+                <div class="icon-wrap purple">
+                    <i class="ti ti-brain"></i>
+                </div>
                 <div class="mode-info">
-                    <div class="mode-title">Play against a friend <span class="badge">Coming soon</span></div>
-                    <div class="mode-desc">Share a link and play with someone you know</div>
+                    <div class="mode-title">Play against Self-trained AI <span class="badge">Coming soon</span></div>
+                    <div class="mode-desc">Trained by playing against itself</div>
                 </div>
                 <i class="ti ti-chevron-right chevron"></i>
             </div>
 
+            <div class="mode-card disabled" onclick="openPicker('ai-minimax')">
+                <div class="icon-wrap blue"><i class="ti ti-brain"></i></div>
+                <div class="mode-info">
+                    <div class="mode-title">Play against Minimax-trained AI <span class="badge">Coming soon</span></div>
+                    <div class="mode-desc">Trained by playing against Minimax</div>
+                </div>
+                <i class="ti ti-chevron-right chevron"></i>
+            </div>
+
+            <!-- Human vs human modes -->
             <a class="mode-card" href="/tictactoe/random">
                 <div class="icon-wrap coral"><i class="ti ti-world"></i></div>
                 <div class="mode-info">
@@ -162,6 +250,61 @@
                 </div>
                 <i class="ti ti-chevron-right chevron"></i>
             </a>
+
+            <div class="mode-card disabled">
+                <div class="icon-wrap gray"><i class="ti ti-users"></i></div>
+                <div class="mode-info">
+                    <div class="mode-title">Play against a friend <span class="badge">Coming soon</span></div>
+                    <div class="mode-desc">Share a link and play with someone you know</div>
+                </div>
+                <i class="ti ti-chevron-right chevron"></i>
+            </div>
         </div>
+
+        <!-- Symbol picker overlay -->
+        <div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+            <div class="picker">
+                <h2>Choose your symbol</h2>
+                <p>X always goes first</p>
+                <div class="symbol-btns">
+                    <button class="symbol-btn" onclick="startGame('X')">✕</button>
+                    <button class="symbol-btn" onclick="startGame('O')">○</button>
+                </div>
+                <button class="btn-cancel" onclick="closePicker()">Cancel</button>
+            </div>
+        </div>
+
+        <script>
+            let selectedMode = null;
+
+            // Modes with "Coming soon" badge — picker opens but navigating is blocked
+            const comingSoon = new Set(["ai-self", "ai-minimax"]);
+
+            function openPicker(mode) {
+                selectedMode = mode;
+                document.getElementById("overlay").classList.add("visible");
+            }
+
+            function closePicker() {
+                selectedMode = null;
+                document.getElementById("overlay").classList.remove("visible");
+            }
+
+            // Click outside the picker card to dismiss
+            function handleOverlayClick(e) {
+                if (e.target === document.getElementById("overlay")) closePicker();
+            }
+
+            function startGame(symbol) {
+                if (!selectedMode) return;
+                if (comingSoon.has(selectedMode)) {
+                    // Show the badge modes as not yet navigable — remove this block later
+                    closePicker();
+                    return;
+                }
+                window.location.href = `/tictactoe/${selectedMode}?symbol=${symbol}`;
+            }
+        </script>
+
     </body>
 </html>
