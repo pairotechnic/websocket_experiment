@@ -15,6 +15,7 @@ class Game:
     board: list[str] = field(default_factory=lambda: [""] * 9)
     current_turn: int = 0  # index into players list
     winner: Optional[str] = None
+    winning_combo: Optional[list[int]] = None
     game_over: bool = False
 
     WINNING_COMBOS = [
@@ -43,7 +44,8 @@ class Game:
         for combo in self.WINNING_COMBOS:
             if all(self.board[i] == symbol for i in combo):
                 self.winner = symbol
+                self.winning_combo = combo
                 self.game_over = True
                 return
         if all(cell != "" for cell in self.board):
-            self.game_over = True   # draw, winner stays None
+            self.game_over = True   # draw, winner, and winning_combo stays None

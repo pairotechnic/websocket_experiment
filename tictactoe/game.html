@@ -38,6 +38,14 @@
                 cursor: default; 
             }
 
+            .cell.win  { 
+                background: #d4edda; 
+            }
+
+            .cell.lose { 
+                background: #f8d7da; 
+            }
+
             #status { 
                 font-size: 1.2rem; 
                 margin: 1rem 0; 
@@ -97,12 +105,16 @@
             let gameId = null;
 
             // Render the board from a flat 9-element array
-            function renderBoard(board) {
+            function renderBoard(board, winningCombo = null, outcome=null) {
                 const boardEl = document.getElementById("board");
                 boardEl.innerHTML = "";
                 board.forEach((cell, i) => {
                     const div = document.createElement("div");
-                    div.className = "cell" + (cell ? " taken" : "");
+                    const isWinCell = winningCombo && winningCombo.includes(i);
+                    let cls = "cell" + (cell ? " taken" : "");
+                    if (isWinCell && outcome === "win") cls += " win";
+                    if (isWinCell && outcome === "lose") cls += " lose";
+                    div.className = cls
                     div.textContent = cell;
                     div.onclick = () => sendMove(i);
                     boardEl.appendChild(div);
@@ -143,7 +155,10 @@
 
                 else if (msg.type === "game_over") {
                     gameOver = true;
-                    if (msg.board) renderBoard(msg.board);
+                    const outcome = msg.winner === mySymbol ? "win" 
+                                    : msg.winner ? "lose" 
+                                    : null; // draw - no highlight
+                    if (msg.board) renderBoard(msg.board, msg.winning_combo, outcome);
 
                     if (msg.message === "Opponent disconnected.") {
                         opponentDisconnected = true;  // set flag BEFORE onclose fires

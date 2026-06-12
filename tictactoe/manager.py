@@ -107,6 +107,7 @@ class GameManager:
             result = {
                 "type": "game_over",
                 "winner": game.winner,   # None = draw
+                "winning_combo": game.winning_combo,
                 "board": game.board,
             }
             for ws in game.players:
@@ -207,6 +208,7 @@ class AIGameManager:
                     await ws.send_json({
                         "type": "game_over",
                         "winner": game.winner,
+                        "winning_combo": game.winning_combo,
                         "board": game.board
                     })
                     break
@@ -238,6 +240,7 @@ class AIGameManager:
             await ws.send_json({
                 "type": "game_over",
                 "winner": game.winner,
+                "winning_combo": game.winning_combo,
                 "board": game.board
             })
 
