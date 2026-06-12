@@ -3,7 +3,7 @@ import asyncio
 import uuid
 
 # Third-Party Library Imports
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 
 # Local Application Imports
 from game import Game
@@ -136,3 +136,108 @@ class GameManager:
             other_task.cancel()
 
         del self.games[game_id]
+
+class AIGameManager:
+    """
+    Manages a single game between one human WebSocket and an AI agent.
+
+    The agent must implement :
+        act(board: list[str], symbol: str) -> int
+    returning the cell index (0-8) the AI wants to play.
+    """
+
+    def __init__(self, agent):
+        self.agent = agent
+
+    async def run(self, player_id: str, ws: WebSocket, human_symbol: str):
+        """
+        Full cycle of one human-vs-AI game.
+        Called directly from the route handler - no queue, no waiting.
+        """
+        await ws.accept()
+
+        ai_symbol = "O" if human_symbol == "X" else "X"
+        game_id = str(uuid.uuid4())[:8]
+        game = Game(
+            game_id=game_id,
+            players=[ws, None],             # slot 1 is unused - AI has no socket
+            player_ids=[player_id, "ai"]
+        )
+
+        # Assign player indices based on symbol choice
+        # X is always index 0, O is always index 1 (matches Game.make_move logic)
+        human_index = 0 if human_symbol == "X" else 1
+        ai_index = 1 - human_index
+
+        # Tell the human the game is starting
+        await ws.send_json({
+            "type": "game_start",
+            "game_id": game_id,
+            "symbol": human_symbol,
+            "your_turn": human_symbol == "X",    # X always goes first
+        })
+
+        # If AI plays X, it moves first before the human has done anything
+        if ai_index == 0:
+            await self._do_ai_turn(ws, game, ai_symbol, ai_index)
+
+        # Main read loop - receives moves from the human
+        try :
+            async for data in ws.iter_json():
+                if game.game_over:
+                    break
+                if data.get("type") != "move":
+                    continue
+
+                cell = data["cell"]
+                valid = game.make_move(human_index, cell)
+
+                if not valid:
+                    await ws.send_json({"type": "error", "message": "Invalid move"})
+                    continue
+
+                # Send update after human's move
+                await ws.send_json({
+                    "type": "game_update",
+                    "board": game.board,
+                    "current_turn": game.current_turn,
+                })
+
+                if game.game_over:
+                    await ws.send_json({
+                        "type": "game_over",
+                        "winner": game.winner,
+                        "board": game.board
+                    })
+                    break
+
+                # AI's turn
+                await self._do_ai_turn(ws, game, ai_symbol, ai_index)
+
+        except WebSocketDisconnect:
+            pass    # human closed the tab - nothing to clean up
+
+    async def _do_ai_turn(
+        self, 
+        ws: WebSocket,
+        game: Game,
+        ai_symbol: str,
+        ai_index: int
+    ):
+        """Compute AI move, apply it, broadcast result."""
+        cell = self.agent.act(game.board, ai_symbol)
+        game.make_move(ai_index, cell)
+
+        await ws.send_json({
+            "type": "game_update",
+            "board": game.board,
+            "current_turn": game.current_turn,
+        })
+
+        if game.game_over:
+            await ws.send_json({
+                "type": "game_over",
+                "winner": game.winner,
+                "board": game.board
+            })
+

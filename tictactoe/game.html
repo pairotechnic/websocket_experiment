@@ -54,23 +54,43 @@
         </div>
 
         <script>
-            // crypto.randomUUID() only works with localhost or https, it's disabled on http
+            // crypto.randomUUID() usually only works with secure contexts like localhost or https, 
+            // it's disabled on http
             // const playerId = crypto.randomUUID();
             
-            // so we calculate a UUID ourselves
+            // so we calculate a UUID ourselves, when crypto.randomUUID() is not available
             function generateUUID() {
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
                     const r = Math.random() * 16 | 0;
                     return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
                 });
             }
-            const playerId = generateUUID();
+            const playerId = crypto?.randomUUID?.() ?? generateUUID();
 
             const host = window.location.host;
-            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             
             // Use wss:// with HTTPS and ws:// otherwise, instead of ws:// everytime, because browsers will refuse to open a ws:// connection from an https:// page (mixed content block)
-            const ws = new WebSocket(`${protocol}//${host}/tictactoe/ws/${playerId}`)
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+            // Work out which WebSocket endpoint to connect to based on the page path
+            // /tictactoe/random    -> /tictactoe/ws/{player_id}
+            // /tictactoe/minimax   -> /tictactoe/ws/minimax/{player_id}?symbol=X
+            const path = window.location.pathname;  // eg) /tictactoe/minimax
+            const params = new URLSearchParams(window.location.search);
+            const symbol = params.get("symbol");    // "X", "O", or null
+
+            let wsUrl;
+            if (path.endsWith("/random")) {
+                wsUrl = `${protocol}//${host}/tictactoe/ws/${playerId}`;
+            } else if (path.endsWith("/minimax")) {
+                const sym = symbol || "X";
+                wsUrl = `${protocol}//${host}/tictactoe/ws/minimax/${playerId}?symbol=${sym}`;
+            } else {
+                // Fallback to /random
+                wsUrl = `${protocol}//${host}/tictactoe/ws/${playerId}`;
+            }
+            
+            const ws = new WebSocket(wsUrl)
             
             let mySymbol = null;
             let myTurn = false;

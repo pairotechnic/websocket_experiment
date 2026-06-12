@@ -65,3 +65,8 @@ def best_move(board: list[str], ai_symbol: str) -> int:
             best_cell = cell
 
     return best_cell
+
+class MinimaxAgent:
+    """Wraps the minimax function as a stateless agent."""
+    def act(self, board: list[str], symbol: str) -> int:
+        return best_move(board, symbol)
