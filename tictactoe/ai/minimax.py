@@ -13,7 +13,7 @@ def get_winner(board: list[str]) -> str | None:
         return "draw"
     return None # game still ongoing
 
-def minimax(board: list[str], is_maximizing: bool, maximizing_symbol: str) -> int:
+def minimax(board: list[str], is_maximizing: bool, maximizing_symbol: str, depth: int = 0) -> int:
     """
     Recursively scores a board position from the maximizing player's perspective.
     Returns +1 (maximizer wins), -1 (minimizer wins), 0 (draw).
@@ -22,9 +22,9 @@ def minimax(board: list[str], is_maximizing: bool, maximizing_symbol: str) -> in
     winner = get_winner(board)
 
     if winner == maximizing_symbol:
-        return 1
+        return 10 - depth # win sooner - higher score
     if winner == minimizing_symbol:
-        return -1
+        return depth - 10 # lose later - higher score (increase opportunities for opponent to make a mistake)
     if winner == "draw":
         return 0
     
@@ -34,7 +34,7 @@ def minimax(board: list[str], is_maximizing: bool, maximizing_symbol: str) -> in
         best = -2
         for cell in empty_cells:
             board[cell] = maximizing_symbol
-            score = minimax(board, False, maximizing_symbol)
+            score = minimax(board, False, maximizing_symbol, depth+1)
             board[cell] = ""
             best = max(best, score)
         return best
@@ -42,7 +42,7 @@ def minimax(board: list[str], is_maximizing: bool, maximizing_symbol: str) -> in
         best = 2
         for cell in empty_cells:
             board[cell] = minimizing_symbol
-            score = minimax(board, True, maximizing_symbol)
+            score = minimax(board, True, maximizing_symbol, depth+1)
             board[cell] = ""
             best = min(best, score)
         return best
