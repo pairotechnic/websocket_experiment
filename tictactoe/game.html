@@ -116,6 +116,7 @@
             }
 
             let opponentDisconnected = false;
+            let gameOver = false
 
             ws.onmessage = ({ data }) => {
                 const msg = JSON.parse(data);
@@ -141,6 +142,7 @@
                 }
 
                 else if (msg.type === "game_over") {
+                    gameOver = true;
                     if (msg.board) renderBoard(msg.board);
 
                     if (msg.message === "Opponent disconnected.") {
@@ -161,7 +163,7 @@
             
             // This should overwrite the message as long as it's not "Opponent disconnected"
             ws.onclose = () => {
-                if (!opponentDisconnected) {
+                if (!opponentDisconnected && !gameOver) {
                     document.getElementById("status").textContent = "Disconnected.";
                 }
             };
