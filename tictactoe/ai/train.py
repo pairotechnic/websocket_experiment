@@ -7,12 +7,88 @@ from pathlib import Path
 from ai.q_agent import QAgent
 from game import Game
 import uuid
+from datetime import datetime
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+import math
 
-SAVE_PATH = Path(__file__).parent / "q_table_self.pkl"
+
+SAVE_PATH = Path(__file__).parent / "models" / f"q_table_self_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.pkl"
 
 # Print a progress line every N episodes out of total episodes
 EPISODES = 200_000
 LOG_EVERY = 10_000
+
+LOG_PATH = Path(__file__).parent / "models" / "_training_log.xlsx"
+
+def log_run(agent: QAgent, episodes: int, wins: dict, q_table_size: int):
+    cols = [
+        "model filename", "alpha", "gamma", "epsilon start", "epsilon min",
+        "epsilon decay", "epsilon min episode", "episodes", "x wins", "o wins", "draws", "q-table size"
+    ]
+
+    # Load or create workbook
+    if LOG_PATH.exists():
+        wb = openpyxl.load_workbook(LOG_PATH)
+        ws = wb.active
+    else :
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Training Log"
+
+        # Header row
+        header_fill = PatternFill("solid", start_color="1F4E79")
+        for c, col in enumerate(cols, start=1):
+            cell = ws.cell(row=1, column=c, value=col)
+            cell.font = Font(bold=True, color="FFFFFF", name="Arial")
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+
+        col_widths = [36, 8, 8, 14, 12, 14, 20, 10, 10, 10, 10, 14]
+        for i, w in enumerate(col_widths, start=1):
+            ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+
+    # Compute epsilon_min_episode: episode at which epsilon first hits epsilon_min
+    # epsilon after ep episodes = max(epsilon_min, epsilon_start * decay^ep )
+    # solve : epsilon_start * decay^ep = epsilon_min
+    # ep = log(epsilon_min / epsilon_start) / log(decay)
+    if agent.epsilon_decay < 1.0:
+        ep_min = math.ceil(
+            math.log(agent.epsilon_min / 1.0) / math.log(agent.epsilon_decay)
+        )
+        ep_min = min(ep_min, episodes)
+    else :
+        ep_min = episodes
+
+    total = sum(wins.values())
+    row = [
+        SAVE_PATH.name,
+        agent.alpha,
+        agent.gamma,
+        1.0,    # epsilon always starts at 1, for pure random exploration in the beginning
+        agent.epsilon_min,
+        agent.epsilon_decay,
+        ep_min,
+        episodes,
+        wins["X"],
+        wins["O"],
+        wins["Draw"],
+        q_table_size
+    ]
+
+    # Alternate row shading
+    next_row = ws.max_row + 1
+    fill = PatternFill("solid", start_color="D6E4F0") if next_row % 2 == 0 else None
+    for c, val in enumerate(row, start=1):
+        cell = ws.cell(row=next_row, column=c, value=val)
+        cell.font = Font(name="Arial")
+        cell.alignment = Alignment(horizontal="center")
+        if fill:
+            cell.fill = fill
+
+    wb.save(LOG_PATH)
+    print(f"Logged run -> {LOG_PATH}")
+
 
 def run_episode(agent_x: QAgent, agent_o: QAgent) -> str | None:
     """
@@ -50,16 +126,13 @@ def train():
     agent_o = QAgent(symbol="O")
 
     wins = {"X": 0, "O": 0, "Draw": 0}
+    total_wins = {"X": 0, "O": 0, "Draw": 0}
 
     for ep in range(1, EPISODES + 1):
         winner = run_episode(agent_x, agent_o)
-
-        if winner == "X":
-            wins["X"] += 1
-        elif winner == "O":
-            wins["O"] += 1
-        else :
-            wins["Draw"] += 1
+        key = winner if winner else "Draw"
+        wins[key] += 1
+        total_wins[key] += 1
 
         agent_x.decay_epsilon()
         agent_o.decay_epsilon()
@@ -79,6 +152,10 @@ def train():
     # Save agent_x's table - at inference time we always load one agent
     # and let it play as whichever symbol the human isn't using
     agent_x.save(SAVE_PATH)
+
+    # Accumulate final wins across all episodes for the log
+    # (move wins dict outside the loop and don't reset after last log)
+    log_run(agent_x, EPISODES, total_wins, len(agent_x.q_table))
     print("Training complete.")
 
 if __name__ == "__main__":
