@@ -28,11 +28,6 @@ class QAgent:
 
         self.q_table: dict[tuple, float] = {}
 
-        # Memory of the last (state, action) so we can update Q after seeing
-        # the result of our move (which only becomes visible on the next turn).
-        self.last_state: tuple | None = None
-        self.last_action: int | None = None
-
     # ------------------------------------------------------------------
     # Board canonicalization
     # ------------------------------------------------------------------
@@ -66,19 +61,9 @@ class QAgent:
     # Core interface
     # ------------------------------------------------------------------
 
-    def act(self, board: list[str], my_symbol: str) -> int:
-        """
-        Choose an action using an ε-greedy policy.
-        Saves (canonical_state, action) so learn() can reference them.
-
-        Args:
-            board:     The raw game board (list of 'X', 'O', '').
-            my_symbol: The symbol this agent is playing as this turn.
-
-        Returns:
-            Cell index (0-8) to play.
-        """
+    def act(self, board: list[str], my_symbol: str) -> tuple[tuple, int]:
         state = self.canonicalize(board, my_symbol)
+
         legal = [i for i, cell in enumerate(board) if cell == ""]
 
         if random.random() < self.epsilon:
@@ -86,47 +71,48 @@ class QAgent:
         else:
             action = self._best_action(state, legal)
 
-        self.last_state = state
-        self.last_action = action
-        return action
+        return state, action
 
-    def learn(self, board: list[str], my_symbol: str, reward: float, done: bool):
-        """
-        Update Q(last_state, last_action) using the Bellman equation.
+    def learn(
+        self,
+        state: tuple,
+        action: int,
+        next_board: list[str],
+        my_symbol: str,
+        reward: float,
+        done: bool,
+    ):
+        next_state = self.canonicalize(next_board, my_symbol)
 
-        Call this after every move, passing the board that *resulted* from
-        the last action, along with the reward signal and whether the game ended.
-
-        Args:
-            board:     The raw board state after the move was applied.
-            my_symbol: The symbol this agent was playing when it made the move.
-            reward:    Reward signal (+1 win, -1 loss, +0.5 draw, 0 otherwise).
-            done:      True if the episode is over.
-        """
-        if self.last_state is None:
-            return
-
-        next_state = self.canonicalize(board, my_symbol)
-        legal_next = [i for i, cell in enumerate(board) if cell == ""]
+        legal_next = [
+            i
+            for i, cell in enumerate(next_board)
+            if cell == ""
+        ]
 
         if done or not legal_next:
             future = 0.0
         else:
-            future = max(self._q(next_state, a) for a in legal_next)
+            future = max(
+                self._q(next_state, a)
+                for a in legal_next
+            )
 
-        current = self._q(self.last_state, self.last_action)
-        self.q_table[(self.last_state, self.last_action)] = (
-            current + self.alpha * (reward + self.gamma * future - current)
+        current = self._q(state, action)
+
+        self.q_table[(state, action)] = (
+            current
+            + self.alpha
+            * (
+                reward
+                + self.gamma * future
+                - current
+            )
         )
 
     def decay_epsilon(self):
         """Step epsilon down after each episode."""
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-
-    def reset_episode(self):
-        """Clear per-episode memory. Call at the start of each new game."""
-        self.last_state = None
-        self.last_action = None
 
     # ------------------------------------------------------------------
     # Persistence

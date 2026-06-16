@@ -32,7 +32,7 @@ EVALUATION_EPISODES = 10_000
 # Rewards
 REWARD_WIN = 1.0
 REWARD_LOSE = -1.0
-REWARD_DRAW = 0.5      # positive: prefer drawing to losing
+REWARD_DRAW = 0.0      # positive: prefer drawing to losing
 REWARD_STEP = 0.0      # no reward for non-terminal moves
 
 
@@ -114,50 +114,95 @@ def run_episode(agent: QAgent, is_training: bool = False) -> str | None:
     """
     game = Game(game_id=str(uuid.uuid4())[:8])
     symbols = ["X", "O"]
-
-    # Clear any state left over from the previous episode
-    agent.reset_episode()
-
-    # We need to remember the last acting symbol so we can issue a deferred
-    # update to the *previous* mover after the *current* mover's action lands.
-    prev_symbol: str | None = None
+    last = {
+        "X": None,
+        "O": None,
+    }
 
     while not game.game_over:
         idx = game.current_turn          # 0 = X, 1 = O
         my_symbol = symbols[idx]
 
-        action = agent.act(game.board, my_symbol)
+        state, action = agent.act(
+            game.board,
+            my_symbol,
+        )
         game.make_move(idx, action)
+        last[my_symbol] = (
+            state,
+            action,
+        )
 
         if not is_training:
             continue
 
         if game.game_over:
+
+            state, action = last[my_symbol]
+
             if game.winner == my_symbol:
-                # Current mover won
-                agent.learn(game.board, my_symbol, REWARD_WIN, done=True)
-                # Previous mover lost — give them a deferred losing update
-                if prev_symbol is not None:
-                    agent.learn(game.board, prev_symbol, REWARD_LOSE, done=True)
+
+                agent.learn(
+                    state,
+                    action,
+                    game.board,
+                    my_symbol,
+                    REWARD_WIN,
+                    True,
+                )
+
+                other = "O" if my_symbol == "X" else "X"
+
+                if last[other] is not None:
+                    prev_state, prev_action = last[other]
+
+                    agent.learn(
+                        prev_state,
+                        prev_action,
+                        game.board,
+                        other,
+                        REWARD_LOSE,
+                        True,
+                    )
+
             else:
-                # Draw (winner is None; a loss mid-game can't happen here
-                # because make_move only sets game_over on win or full board)
-                agent.learn(game.board, my_symbol, REWARD_DRAW, done=True)
-                if prev_symbol is not None:
-                    agent.learn(game.board, prev_symbol, REWARD_DRAW, done=True)
+                agent.learn(
+                    state,
+                    action,
+                    game.board,
+                    my_symbol,
+                    REWARD_DRAW,
+                    True,
+                )
+
+                other = "O" if my_symbol == "X" else "X"
+
+                if last[other] is not None:
+                    prev_state, prev_action = last[other]
+
+                    agent.learn(
+                        prev_state,
+                        prev_action,
+                        game.board,
+                        other,
+                        REWARD_DRAW,
+                        True,
+                    )
         else:
-            # Non-terminal: give the *previous* mover their deferred update now
-            # that we can see what the opponent did in response.
-            if prev_symbol is not None:
-                agent.learn(game.board, prev_symbol, REWARD_STEP, done=False)
+            other = "O" if my_symbol == "X" else "X"
 
-            # The current mover's update will come next turn (deferred).
-            # We do need to call act() again next iteration, which will
-            # overwrite last_state/last_action — so snapshot them first
-            # by doing nothing: learn() is intentionally called *after*
-            # the next act(), using the saved last_state/last_action.
+            if last[other] is not None:
 
-        prev_symbol = my_symbol
+                prev_state, prev_action = last[other]
+
+                agent.learn(
+                    state=prev_state,
+                    action=prev_action,
+                    next_board=game.board,
+                    my_symbol=other,
+                    reward=REWARD_STEP,
+                    done=False,
+                )
 
     return game.winner
 
