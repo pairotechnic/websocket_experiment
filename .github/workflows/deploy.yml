@@ -92,3 +92,5 @@ jobs:
             GITHUB_REPOSITORY=${{ github.repository }} \
             docker compose up -d --no-build && \
             docker image prune -f"
+
+# Minimal commit to test AWS security group inbound rule changes
