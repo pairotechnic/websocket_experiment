@@ -1,4 +1,5 @@
 # Standard Library Imports
+import os
 from pathlib import Path
 import pickle
 import random
@@ -129,6 +130,7 @@ class QAgent:
     # ------------------------------------------------------------------
 
     def save(self, path: Path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as f:
             pickle.dump(self.q_table, f)
         print(f"Saved Q-table ({len(self.q_table)} entries -> {path})")

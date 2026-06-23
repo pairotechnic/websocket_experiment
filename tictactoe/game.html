@@ -175,11 +175,13 @@
 
                 else if (msg.type === "error") {
                     console.warn("Server error:", msg.message);
+                    document.getElementById("status").textContent = msg.message;
+                    gameOver = true;  // ← prevents onclose from overwriting the message with Disconnected
                 }
             };
 
             
-            // This should overwrite the message as long as it's not "Opponent disconnected"
+            // This should overwrite the message as long as it's not "Opponent disconnected" or "Game over"
             ws.onclose = () => {
                 if (!opponentDisconnected && !gameOver) {
                     document.getElementById("status").textContent = "Disconnected.";
