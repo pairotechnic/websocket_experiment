@@ -70,3 +70,8 @@ class MinimaxAgent:
     """Wraps the minimax function as a stateless agent."""
     def act(self, board: list[str], symbol: str) -> int:
         return best_move(board, symbol)
+    
+    # Alias of act for now
+    # def act could be modified to add randomness, or choose randomly between equal moves
+    def greedy_act(self, board: list[str], symbol: str) -> int:
+        return best_move(board, symbol)

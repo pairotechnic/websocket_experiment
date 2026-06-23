@@ -227,7 +227,7 @@ class AIGameManager:
         ai_index: int
     ):
         """Compute AI move, apply it, broadcast result."""
-        cell = self.agent.act(game.board, ai_symbol)
+        cell = self.agent.greedy_act(game.board, ai_symbol)
         game.make_move(ai_index, cell)
 
         await ws.send_json({

@@ -93,6 +93,9 @@
             } else if (path.endsWith("/minimax")) {
                 const sym = symbol || "X";
                 wsUrl = `${protocol}//${host}/tictactoe/ws/minimax/${playerId}?symbol=${sym}`;
+            } else if (path.endsWith("/q-agent")) {
+                const sym = symbol || "X";
+                wsUrl = `${protocol}//${host}/tictactoe/ws/q-agent/${playerId}?symbol=${sym}`;
             } else {
                 // Fallback to /random
                 wsUrl = `${protocol}//${host}/tictactoe/ws/${playerId}`;

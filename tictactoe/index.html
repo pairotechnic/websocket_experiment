@@ -221,12 +221,12 @@
                 <i class="ti ti-chevron-right chevron"></i>
             </div>
 
-            <div class="mode-card disabled" onclick="openPicker('ai-self')">
+            <div class="mode-card" onclick="openPicker('q-agent')">
                 <div class="icon-wrap purple">
                     <i class="ti ti-brain"></i>
                 </div>
                 <div class="mode-info">
-                    <div class="mode-title">Play against Self-trained AI <span class="badge">Coming soon</span></div>
+                    <div class="mode-title">Play against Self-trained AI</div>
                     <div class="mode-desc">Trained by playing against itself</div>
                 </div>
                 <i class="ti ti-chevron-right chevron"></i>
@@ -278,7 +278,7 @@
             let selectedMode = null;
 
             // Modes with "Coming soon" badge — picker opens but navigating is blocked
-            const comingSoon = new Set(["ai-self", "ai-minimax"]);
+            const comingSoon = new Set(["ai-minimax"]);
 
             function openPicker(mode) {
                 selectedMode = mode;
@@ -298,7 +298,6 @@
             function startGame(symbol) {
                 if (!selectedMode) return;
                 if (comingSoon.has(selectedMode)) {
-                    // Show the badge modes as not yet navigable — remove this block later
                     closePicker();
                     return;
                 }

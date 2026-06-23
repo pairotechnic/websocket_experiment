@@ -72,6 +72,16 @@ class QAgent:
             action = self._best_action(state, legal)
 
         return state, action
+    
+    def greedy_act(self, board: list[str], my_symbol: str) -> int:
+        """
+        Used during interface (playing against a human)
+        Returns just the cell index - no exploration, fully greedy
+        Compatible with AIGameManager which calls agent.act(board, symbol) -> int
+        """
+        state = self.canonicalize(board, my_symbol)
+        legal = [i for i, cell in enumerate(board) if cell == ""]
+        return self._best_action(state, legal)
 
     def learn(
         self,
