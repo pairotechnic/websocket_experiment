@@ -72,6 +72,7 @@ async def minimax_ws(ws: WebSocket, player_id: str, symbol: str = "X"):
 async def q_agent_ws(ws: WebSocket, player_id: str, symbol: str = "X"):
     """Human vs self-trained Q-agent"""
     if q_agent is None:
+        print("Q-agent model not found.")
         await ws.accept()
         await ws.send_json({"type": "error", "message": "No trained model found. Run ai/train.py first."})
         await ws.close()
