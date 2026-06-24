@@ -330,3 +330,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Dummy git push, to see if models folder inside container on VM will be empty or contain the saved models in models folder on host VM
