@@ -152,7 +152,9 @@
                     if (isWinCell && outcome === "lose") cls += " lose";
                     div.className = cls
                     div.textContent = cell;
-                    div.onclick = () => sendMove(i);
+                    if (!cell) {
+                        div.onclick = () => sendMove(i);   // only empty cells are clickable
+                    }
                     boardEl.appendChild(div);
                 });
             }
