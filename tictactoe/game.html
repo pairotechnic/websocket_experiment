@@ -50,6 +50,35 @@
                 font-size: 1.2rem; 
                 margin: 1rem 0; 
             }
+
+            #post-game-actions {
+                display: none;
+                gap: 0.75rem;
+                margin-top: 0.5rem;
+            }
+
+            #post-game-actions.visible {
+                display: flex;
+            }
+
+            #post-game-actions button {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.95rem;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                background: #fff;
+                cursor: pointer;
+            }
+
+            #post-game-actions button:hover {
+                background: #f0f0f0;
+            }
+
+            #btn-new-game {
+                border-color: #1a5fa8;
+                color: #1a5fa8;
+                font-weight: 600;
+            }
         </style>
     </head>
 
@@ -59,6 +88,10 @@
         <div id="status">Connecting...</div>
         <div id="board">
             <!-- 9 cells rendered by JS -->
+        </div>
+        <div id="post-game-actions">
+            <button id="btn-new-game" onclick="startNewGame()">New Game</button>
+            <button id="btn-main-menu" onclick="goToMainMenu()">Main Menu</button>
         </div>
 
         <script>
@@ -130,6 +163,18 @@
                 myTurn = false;  // optimistic — server will confirm
             }
 
+            function showPostGameActions() {
+                document.getElementById("post-game-actions").classList.add("visible");
+            }
+
+            function startNewGame() {
+                window.location.reload();  // same path + symbol query param -> same mode, same symbol
+            }
+
+            function goToMainMenu() {
+                window.location.href = "/tictactoe";
+            }
+
             let opponentDisconnected = false;
             let gameOver = false
 
@@ -171,12 +216,14 @@
                                 : msg.winner ? "You lost."
                                 : msg.message || "Draw!";
                     document.getElementById("status").textContent = result;
+                    showPostGameActions();
                 }
 
                 else if (msg.type === "error") {
                     console.warn("Server error:", msg.message);
                     document.getElementById("status").textContent = msg.message;
                     gameOver = true;  // ← prevents onclose from overwriting the message with Disconnected
+                    showPostGameActions();
                 }
             };
 
@@ -185,6 +232,7 @@
             ws.onclose = () => {
                 if (!opponentDisconnected && !gameOver) {
                     document.getElementById("status").textContent = "Disconnected.";
+                    showPostGameActions();
                 }
             };
             
